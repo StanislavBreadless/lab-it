@@ -1,0 +1,3 @@
+interface IdResponse {
+    id: string
+}
