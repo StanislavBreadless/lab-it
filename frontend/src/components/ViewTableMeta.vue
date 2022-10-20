@@ -92,7 +92,7 @@ function columnTypes(): ColumnType[] {
             this.$emit('deleteColumn', this.deleteColumnSelected);
         },
         viewTablesContent() {
-            alert('TODO')
+            this.$emit('viewTablesContent');
         }
     }
   });

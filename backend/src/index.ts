@@ -144,7 +144,7 @@ app.get('/dbs/:dbId/tables/:tableId', (req: Request, res: Response) => {
     }
 
     // Double-checking that the table does indeed correspond to that db 
-    if( dbs[dbs.findIndex(db => db.id == dbId)].tables.filter((table) => table.id == tableId).length != 0 ) {
+    if( dbs[dbs.findIndex(db => db.id == dbId)].tables.filter((table) => table.id == tableId).length == 0 ) {
         res.status(404);
         res.end('There is no table with such Id in the db');
         return;
@@ -155,6 +155,7 @@ app.get('/dbs/:dbId/tables/:tableId', (req: Request, res: Response) => {
     if (!tableData) {
         res.status(404);
         res.end('There is no table with such Id in the db');
+        return;
     }
 
     res.end(JSON.stringify(tableData))
@@ -221,15 +222,18 @@ app.delete('/dbs/:dbId/tables/:tableId/columns/:columnId', (req, res) => {
     res.end('{}');
 })
 
-/// Add a cell to the table
+/// Add a row to the table
 app.post('/dbs/:dbId/tables/:tableId/rows', (req, res) => {
     const { dbId, tableId } = req.params;
+
+    console.log('BODY\n\n', req.body);
+
 
     checkForExistence(res, dbId, tableId);
     const rowId = addTableRow(dbId, tableId, req.body);
 
     res.status(200);    
-    res.end(rowId);
+    res.end(JSON.stringify(rowId));
 });
 
 interface EditCellData {
@@ -245,6 +249,7 @@ app.post('/dbs/:dbId/tables/:tableId/rows/:rowId', (req, res) => {
     editTableRow(dbId, tableId, rowId, reqBody.colId, reqBody.newValue);
 
     res.status(200);
+    res.end('{}')
 })
 
 /// Delete a row in a table
@@ -253,6 +258,7 @@ app.delete('/dbs/:dbId/tables/:tableId/rows/:rowId', (req, res) => {
 
     deleteTableRow(dbId, tableId, rowId);
     res.status(200);
+    res.end('{}')
 })
 
 app.listen(port, () => {

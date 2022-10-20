@@ -1,9 +1,9 @@
 <template>
   <div id="app">
     <OpenDB @openDb="openDb" @createDb="createDb" v-if="state == 'OpenDB'" />
-    <ViewDb  @editTableMeta="editTableMeta" @changeDbName="changeDbName" @deleteDb="deleteDb" @addTable="addTable" :dbInfo="dbInfo" v-else-if="state == 'ViewDb'" />
-    <ViewTableMeta @deleteColumn="deleteColumn" @editColumnName="editColumnName" @addNewColumn="addNewColumn" @changeTableName="changeTableName" :dbInfo="dbInfo" :tableId="viewedTableId" v-else-if="state == 'ViewTableMeta'" />
-    <ViewTable v-else-if="state == 'ViewTable'" />
+    <ViewDb  @openTableContent="viewTableContent" @editTableMeta="editTableMeta" @changeDbName="changeDbName" @deleteDb="deleteDb" @addTable="addTable" :dbInfo="dbInfo" v-else-if="state == 'ViewDb'" />
+    <ViewTableMeta @viewTablesContent="viewCurrentTableContent" @deleteColumn="deleteColumn" @editColumnName="editColumnName" @addNewColumn="addNewColumn" @changeTableName="changeTableName" :dbInfo="dbInfo" :tableId="viewedTableId" v-else-if="state == 'ViewTableMeta'" />
+    <ViewTable @deleteTable="deleteCurrentTable" @editMeta="editCurrentTableMeta" @editRow="editRowFromCurrentTable" @deleteRow="deleteRowFromCurrentTable" @addRow="addToRowToCurrentTable" :dbInfo="dbInfo" :tableId="viewedTableId" :tableData="tableData" v-else-if="state == 'ViewTable'" />
     <ViewIntersection v-else-if="state == 'ViewIntersection'" />
     <Loader v-else-if="state == 'Loader'" />
   </div>
@@ -14,11 +14,11 @@ import Vue from 'vue';
 import HelloWorld from './components/HelloWorld.vue';
 import OpenDB from './components/OpenDB.vue';
 import ViewDb from './components/ViewDb.vue';
-import ViewTable from './components/ViewTable.vue';
+import ViewTable from './components/ViewTableContent.vue';
 import ViewIntersection from './components/ViewIntersection.vue';
 import Loader from './components/Loader.vue';
-import { ColumnType, DatabaseMeta } from './backend-types';
-import { addColumn, changeDbName, createDb, createNewTable, deleteColumn, deleteDb, editColumnName, editTableName, getDbInfo, getDbInfoByName } from './http';
+import { ColumnType, DatabaseMeta, DataCell, TableData } from './backend-types';
+import { addColumn, addRow, changeDbName, createDb, createNewTable, deleteColumn, deleteDb, deleteRow, deleteTable, editCellData, editColumnName, editTableName, getDbInfo, getDbInfoByName, getTableData } from './http';
 import ViewTableMeta from './components/ViewTableMeta.vue';
 
 type State = 'OpenDB' | 'Loader' | 'ViewDb' | 'ViewTable' | 'ViewIntersection' | 'ViewTableMeta';
@@ -26,6 +26,7 @@ type State = 'OpenDB' | 'Loader' | 'ViewDb' | 'ViewTable' | 'ViewIntersection' |
 interface FormState {
   state: State,
   dbInfo: DatabaseMeta|null,
+  tableData: TableData|null,
   viewedTableId: string
 }
 
@@ -35,7 +36,8 @@ export default Vue.extend({
     return {
       state: 'OpenDB',
       dbInfo: null,
-      viewedTableId: ''
+      viewedTableId: '',
+      tableData: null
     } as FormState
   },
   components: {
@@ -208,6 +210,99 @@ methods: {
     } catch(e) {
       alert(e);
       this.state = 'ViewDb';
+    }
+  },
+
+  async editCurrentTableMeta() {
+    await this.editTableMeta(
+      this.dbInfo!.tables.find(table => table.id == this.viewedTableId)!.name
+    )
+  },
+
+  async viewCurrentTableContent() {
+    try {
+      this.state = 'Loader';
+      this.tableData = await getTableData(this.dbInfo!.id, this.viewedTableId);
+
+      console.log('TABLE DATA ', this.tableData);
+
+      this.state = 'ViewTable';
+    } catch(e) {
+      alert(e);
+      this.state = 'ViewDb';
+    }
+  },
+
+  async viewTableContent(tableName: string) {
+    try {
+      this.state = 'Loader';
+      const selectedTableId = this.dbInfo!.tables.find(table => table.name == tableName)!;
+      this.viewedTableId = selectedTableId.id;
+
+      this.tableData = await getTableData(this.dbInfo!.id, this.viewedTableId);
+
+      this.state = 'ViewTable';
+    } catch(e) {
+      alert(e);
+      this.state = 'ViewDb';
+    }
+  },
+
+  async addToRowToCurrentTable(rowData: DataCell[]) {
+    try {
+      this.state = 'Loader';
+
+      await addRow(this.dbInfo!.id,this.viewedTableId,rowData);
+      this.tableData = await getTableData(this.dbInfo!.id, this.viewedTableId);
+
+      this.state = 'ViewTable';
+    } catch(e) {
+      alert(e);
+      this.state = 'ViewTable';
+    }
+  },
+
+  async deleteRowFromCurrentTable(rowId: string) {
+    try {
+      this.state = 'Loader';
+
+      await deleteRow(this.dbInfo!.id, this.viewedTableId, rowId);
+      this.tableData = await getTableData(this.dbInfo!.id, this.viewedTableId);
+
+      this.state = 'ViewTable';
+    } catch(e) {
+      alert(e);
+      this.state = 'ViewTable';
+    }
+  },
+
+  async editRowFromCurrentTable(rowId: string, colId: string, newVal: string) {
+    try {
+      this.state = 'Loader';
+      
+      console.log(`${rowId} ${colId} ${newVal}`);
+
+      await editCellData(this.dbInfo!.id, this.viewedTableId, rowId, colId, newVal);
+      this.tableData = await getTableData(this.dbInfo!.id, this.viewedTableId);
+
+      this.state = 'ViewTable';
+    } catch(e) {
+      alert(e);
+      this.state = 'ViewTable';
+    }
+  },
+
+  async deleteCurrentTable() {
+    try {
+      this.state = 'Loader';
+      
+      await deleteTable(this.dbInfo!.id, this.viewedTableId);
+      this.dbInfo = await getDbInfo(this.dbInfo!.id);
+
+      this.state = 'ViewDb'
+    } catch(e) {
+      alert(e);
+      this.state = 'OpenDB'
     }
   }
 }

@@ -1,8 +1,9 @@
 
 import { writeFileSync, readFileSync, existsSync } from 'fs'; 
-import { ColumnMetadata, ColumnType, DatabaseMeta, DataCell, RowData, TableData, TableMetadata, validateType } from './db';
+import { ColumnMetadata, ColumnType, DatabaseMeta, DataCell, RowData, TableData, TableMetadata, validateType,  } from './db';
 import { v4 as uuidv4 } from 'uuid';
-import { loadDatabases, loadTableData, saveBlob, saveDatabases, saveTableData } from './fs-utils';
+import { loadDatabases, loadTableData, saveBlob, saveDatabases, saveTableData, deleteTableData } from './fs-utils';
+import { table } from 'console';
 
 export * from './fs-utils';
 
@@ -86,6 +87,8 @@ export function addTable(dbId: string, tableName: string): IdResponse {
         db.tables.push(new TableMetadata(tableId, tableName, []));
     });
 
+    saveTableData(tableId, new TableData());
+
     return {
         id: tableId
     };
@@ -99,6 +102,7 @@ export function deleteTable(dbId: string, tableId: string) {
 
         db.tables = [...db.tables.filter(table => table.id !== tableId)]
     });
+    deleteTableData(tableId);
 }
 
 export function editTableMetadata(dbId: string, tableId: string, metadata: TableMetadata) {
@@ -177,6 +181,7 @@ export function addTableColumn(dbId: string, tableId: string, columnName: string
         for(const row of tableData.data) {
             row.data.push(null);
         }
+        saveTableData(tableId, tableData);
     });
 
     return {
@@ -217,7 +222,9 @@ export function addTableRow(dbId: string, tableId: string, rowData: DataCell[]):
     const table = loadTableData(tableId);
     table.data.push(row);
 
+    console.log('DDDDDD')
     saveTableData(tableId, table);
+    console.log('HHHHHH')
 
     return {
         id: row.rowId

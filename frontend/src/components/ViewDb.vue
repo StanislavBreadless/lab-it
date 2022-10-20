@@ -26,7 +26,11 @@
                 <button @click="editTableMeta">Edit table meta</button>
             </div>
             <div>
-                5. Open table
+                <p>5. Open table</p>
+                <select name="table" v-model="openTableContentName">
+                    <option v-for="table in dbInfo.tables">{{table.name}}</option>
+                </select>
+                <button @click="openTableContent">Open table content</button>
             </div>
             <div>
                 6. Delete table
@@ -51,7 +55,8 @@ import Vue from 'vue';
         return {
             newDbName: '',
             newTableName: '',
-            editMetaTableName: ''
+            editMetaTableName: '',
+            openTableContentName: ''
         }
     },
     methods: {
@@ -66,6 +71,9 @@ import Vue from 'vue';
         },
         editTableMeta() {
             this.$emit('editTableMeta', this.editMetaTableName);
+        },
+        openTableContent() {
+            this.$emit('openTableContent', this.openTableContentName);
         }
     }
   });

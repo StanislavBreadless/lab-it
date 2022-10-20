@@ -1,9 +1,10 @@
 // This file should be the only point for interaction with
 // the files.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import sha256 from 'fast-sha256';
 import { DatabaseMeta, TableData } from "./db";
+import { table } from "console";
 
 const DB_INFO_FILE = 'data/db_info.json';
 const TABLE_FOLDER = 'data/tables';
@@ -30,8 +31,18 @@ export function loadTableData(tableId: string): TableData {
     try { tableData = readFileSync(`${TABLE_FOLDER}/${tableId}`).toString(); }
     catch(e) {
         tableData = JSON.stringify(new TableData());
+        console.log('I am here, but  ', tableData);
     }
+    console.log(tableData);
+
     return JSON.parse(tableData);
+}
+
+export function deleteTableData(tableId: string) {
+    const file  = `${TABLE_FOLDER}/${tableId}`;
+    if(existsSync(file)) {
+        rmSync(file);
+    }
 }
 
 export function saveTableData(tableId: string, data: TableData) {
