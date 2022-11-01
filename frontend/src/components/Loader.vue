@@ -1,6 +1,6 @@
 <template>
     <div class="hello">
-      Loader...
+      Loading...
     </div>
   </template>
   

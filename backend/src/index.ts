@@ -2,8 +2,8 @@ import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 
 import { loadDatabases, loadTableData, addDb, editTableName, addTableColumn, deleteTableColumn, renameTableColumn, addTable, deleteTable, deleteDb, addTableRow, editTableRow, deleteTableRow, changeDbName } from './db-utils';
-import { strToColumnType } from './db';
-import { table } from 'console';
+import { ColumnType, intersection, strToColumnType } from './db';
+import { dbNotFound, errorWithStatus, invalidRequest, notFound, tableNotFound } from './utils';
 
 const cors = require('cors');
 
@@ -14,6 +14,7 @@ const app: Express = express();
 app.use(cors())
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 const port = process.env.PORT;
 
@@ -26,9 +27,7 @@ app.get('/dbs', (req: Request, res: Response) => {
     if(name) {
         const db = dbs.find(db => db.name === name);
         if(!db) {
-            res.status(404);
-            res.end('Db not found')
-            return;
+            dbNotFound();
         }
         res.end(JSON.stringify(db));
     } else {    
@@ -39,19 +38,14 @@ app.get('/dbs', (req: Request, res: Response) => {
 /// Create a db
 /// Returns its ID
 app.post('/dbs', (req, res) => {
-    console.log('here', req.body);
     const name = req.body.name;
-    console.log(req.body);
 
     if (!name || !(typeof name == 'string')) {
-        console.log('lya');
-        res.status(400);
-        res.end('Invalid request');
+        invalidRequest();
         return;
     }
 
     const id = addDb(name);
-    console.log('id', id);
 
     res.setHeader('Content-Type', 'application/json');
     res.send(id);
@@ -60,19 +54,17 @@ app.post('/dbs', (req, res) => {
 /// Get information about a DB by Id
 app.get('/dbs/:dbId', (req: Request, res: Response) => {
     const { dbId } = req.params;
-    console.log(dbId);
 
     const dbs = loadDatabases();
+    const db = dbs.find(db => db.id === dbId);
 
     // Double-checking that the table does indeed correspond to that db 
-    if(!dbs.find(db => db.id === dbId)) {
-        res.status(404);
-        res.end('There is no db with such Id');
-        return;
+    if(!db) {
+        dbNotFound();
     }
 
     res.setHeader('Content-Type', 'application/json');
-    res.send(dbs[dbs.findIndex(db => db.id == dbId)]);
+    res.send(db);
 });
 
 app.post('/dbs/:dbId', (req, res) => {
@@ -92,8 +84,7 @@ app.delete('/dbs/:dbId', (req: Request, res: Response) => {
     const dbs = loadDatabases();
    
     if(!dbs.find(db => db.id === dbId)) {
-        res.status(404);
-        res.end('There is no db with such Id');
+        dbNotFound();
         return;
     }
 
@@ -108,24 +99,20 @@ app.delete('/dbs/:dbId', (req: Request, res: Response) => {
 /// Returns the new table's ID
 app.post('/dbs/:dbId/tables', (req, res) => {
     const { dbId } = req.params; 
-    // console.log(req.body);
     const { name } = req.body;
     const dbs = loadDatabases();
     
-    if(!dbs.find(db => db.id === dbId)) {
-        res.status(404);
-        res.end('Db not found');
-        return;
+    const db = dbs.find(db => db.id === dbId);
+
+    if(!db) {
+        dbNotFound();
     }
 
     if(!name) {
-        res.status(400);
-        res.end('Invalid name');
-        return;
+        errorWithStatus('Invalid name', 400);
     }
 
     const tableId = addTable(dbId, name);
-    console.log(tableId);
     res.status(200);
     res.end(JSON.stringify(tableId));
 });
@@ -137,24 +124,48 @@ app.get('/dbs/:dbId/tables/:tableId', (req: Request, res: Response) => {
     const { dbId, tableId } = req.params;
     const dbs = loadDatabases();
 
-    if(!dbs.find(db => db.id === dbId)) {
-        res.status(404);
-        res.end('Db not found');
+    const db = dbs.find(db => db.id === dbId);
+
+    if(!db) {
+        dbNotFound();
         return;
     }
 
+    const table1 = db.tables.filter((table) => table.id == tableId)[0];
+
     // Double-checking that the table does indeed correspond to that db 
-    if( dbs[dbs.findIndex(db => db.id == dbId)].tables.filter((table) => table.id == tableId).length == 0 ) {
-        res.status(404);
-        res.end('There is no table with such Id in the db');
+    if(!table1) {
+        tableNotFound();
         return;
     }
 
     const tableData = loadTableData(tableId);
 
     if (!tableData) {
-        res.status(404);
-        res.end('There is no table with such Id in the db');
+        tableNotFound();
+        return;
+    }
+
+    let result = JSON.stringify(tableData);
+
+    if(req.query.intersection) {
+        const table2Id = req.query.intersection;
+        const table2 = db.tables.filter((table) => table.id == table2Id)[0];
+
+        // Double-checking that the table does indeed correspond to that db 
+        if(!table2) {
+            tableNotFound();
+            return;
+        }
+
+        const tableData2 = loadTableData(table2Id.toString());
+        if(!tableData2) {
+            tableNotFound();
+            return;    
+        }
+
+        result = JSON.stringify(intersection(tableData, tableData2, table1, table2));
+        res.end(JSON.stringify(result))
         return;
     }
 
@@ -193,7 +204,16 @@ app.post('/dbs/:dbId/tables/:tableId/columns', (req, res) => {
     const query: AddColumnQuery = req.body;
 
     checkForExistence(res, dbId, tableId);
-    const id = addTableColumn(dbId, tableId, query.name, strToColumnType(query.type));
+
+    let colType: ColumnType;
+    try {
+        colType = strToColumnType(query.type);
+    } catch(e) {
+        errorWithStatus('Invalid column type', 400);
+        return;
+    }
+
+    const id = addTableColumn(dbId, tableId, query.name, colType);
 
     res.status(200);
     res.end(JSON.stringify(id));
@@ -225,9 +245,6 @@ app.delete('/dbs/:dbId/tables/:tableId/columns/:columnId', (req, res) => {
 /// Add a row to the table
 app.post('/dbs/:dbId/tables/:tableId/rows', (req, res) => {
     const { dbId, tableId } = req.params;
-
-    console.log('BODY\n\n', req.body);
-
 
     checkForExistence(res, dbId, tableId);
     const rowId = addTableRow(dbId, tableId, req.body);
@@ -268,19 +285,28 @@ app.listen(port, () => {
 function checkForExistence(res: Record<any,any>, dbId: string, tableId?: string) {
     const dbs = loadDatabases();
 
-    if(!dbs.find(db => db.id === dbId)) {
-        res.status(404);
-        res.end('There is no table with such Id in the db');
+    const db = dbs.find(db => db.id === dbId);
+
+    if(!db) {
+        dbNotFound();
         return;
     }
 
     if(tableId) {
         // Double-checking that the table does indeed correspond to that db 
-        if( dbs[dbs.findIndex(db => db.id == dbId)].tables.filter((table) => table.id == tableId).length == 0 ) {
-            res.status(404);
-            res.end('There is no table with such Id in the db');
+        if(db.tables.filter((table) => table.id == tableId).length == 0 ) {
+            tableNotFound();
             return;
         }
     }
 }
 
+
+app.use((err: any, _: any, res: any, next: any) => {
+    if (err.message && err.statusCode) {
+      return res.status(err.statusCode).json({ message: err.message }) 
+    }
+    // pass the error to the default error handler
+    return next(err);
+});
+  

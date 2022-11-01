@@ -16,13 +16,13 @@ export function loadDatabases(): DatabaseMeta[] {
 }
 
 export function saveDatabases(db: DatabaseMeta[]) {
-    console.log('orig:',  db);
-    for(const dbs of db) {
-        for(const table of dbs.tables) {
-            console.log('table: ', table);
-        }
-    }
-    console.log('SAVE: ', JSON.stringify(db));
+    // console.log('orig:',  db);
+    // for(const dbs of db) {
+    //     for(const table of dbs.tables) {
+    //         console.log('table: ', table);
+    //     }
+    // }
+    // console.log('SAVE: ', JSON.stringify(db));
     writeFileSync(DB_INFO_FILE, JSON.stringify(db));
 }
 
@@ -31,9 +31,7 @@ export function loadTableData(tableId: string): TableData {
     try { tableData = readFileSync(`${TABLE_FOLDER}/${tableId}`).toString(); }
     catch(e) {
         tableData = JSON.stringify(new TableData());
-        console.log('I am here, but  ', tableData);
     }
-    console.log(tableData);
 
     return JSON.parse(tableData);
 }

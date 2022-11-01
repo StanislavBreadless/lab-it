@@ -4,6 +4,7 @@ import { ColumnMetadata, ColumnType, DatabaseMeta, DataCell, RowData, TableData,
 import { v4 as uuidv4 } from 'uuid';
 import { loadDatabases, loadTableData, saveBlob, saveDatabases, saveTableData, deleteTableData } from './fs-utils';
 import { table } from 'console';
+import { columnNotFound, dbNotFound, errorWithStatus, rowNotFound, tableNotFound } from './utils';
 
 export * from './fs-utils';
 
@@ -39,7 +40,7 @@ export function changeDbName(dbId: string, newName: string) {
     const pos = databases.findIndex(db => db.id == dbId);
 
     if (pos == -1) {
-        throw new Error('Database not found');
+        errorWithStatus('Database not found', 404);
     }
     databases[pos].name = newName;
 
@@ -49,7 +50,7 @@ export function changeDbName(dbId: string, newName: string) {
 export function deleteDb(id: string) {
     const prevDbInfos = loadDatabases();
     if(!prevDbInfos.some(db => db.id == id)) {
-        throw new Error('Not found')
+        dbNotFound();
     }
 
     saveDatabases(prevDbInfos.filter(db => db.id !== id));
@@ -59,7 +60,7 @@ function changeDBs(dbId: string, func: (db: DatabaseMeta) => void) {
     const databases = loadDatabases();
         
     if (!databases.find(db => db.id == dbId)) {
-        throw new Error('Database not found');
+        dbNotFound();
     }
 
     // It assumes that passing by reference will work as expected
@@ -73,7 +74,8 @@ function changeTableMeta(dbId: string, tableId: string, func: (table: TableMetad
     changeDBs(dbId, (db) => {
         const table = db.tables.find(t => t.id == tableId);
         if(!table) {
-            throw new Error('Table not found');
+            dbNotFound();
+            throw new Error('unreachable');
         }
 
         func(table);
@@ -97,7 +99,7 @@ export function addTable(dbId: string, tableName: string): IdResponse {
 export function deleteTable(dbId: string, tableId: string) {
     changeDBs(dbId, (db) => {
         if (!db.tables.find(t => t.id == tableId)) {
-            throw new Error('Table not found');
+            tableNotFound();
         }
 
         db.tables = [...db.tables.filter(table => table.id !== tableId)]
@@ -117,7 +119,7 @@ export function editTableMetadata(dbId: string, tableId: string, metadata: Table
         }
 
         if(!found) {
-            throw new Error('Table not found');
+            tableNotFound();
         }
     })
 }
@@ -138,11 +140,7 @@ function countPred<X>(a: Array<X>, pred: (x: X)=>boolean): number {
 }
 
 function corruptDb(err: string) {
-    throw new Error(`Corrupt DB: ${err}`);
-}
-
-function notFound() {
-    throw new Error('Not found');
+    errorWithStatus(`Corrupt DB: ${err}`, 500);
 }
 
 export function deleteTableColumn(dbId: string, tableId: string, columnId: string) {
@@ -150,7 +148,7 @@ export function deleteTableColumn(dbId: string, tableId: string, columnId: strin
         const colCount = countPred(table.columns, (c) => c.id == columnId);
 
         if(colCount == 0) {
-            notFound();
+            columnNotFound();
         }
 
         if(colCount != 1) {
@@ -194,7 +192,7 @@ export function renameTableColumn(dbId: string, tableId: string, columnId: strin
         const colCount = countPred(table.columns, (c) => c.id == columnId);
 
         if(colCount == 0) {
-            notFound();
+            columnNotFound();
         }
 
         if(colCount != 1) {
@@ -217,14 +215,13 @@ export function addTableRow(dbId: string, tableId: string, rowData: DataCell[]):
     // double check
     // @ts-ignore 
     if(!row){
-        throw new Error('Could not add a column for unknown reason');
+        errorWithStatus('Could not add a column for unknown reason', 500);
+        throw new Error('unreachable');
     }
     const table = loadTableData(tableId);
     table.data.push(row);
 
-    console.log('DDDDDD')
     saveTableData(tableId, table);
-    console.log('HHHHHH')
 
     return {
         id: row.rowId
@@ -240,14 +237,16 @@ export function editTableRow(dbId: string, tableId: string, rowId: string, colId
     // double check
     // @ts-ignore 
     if(!tableColumns.length){
-        throw new Error('Could not add a column for unknown reason');
+        errorWithStatus('Could not add a column for unknown reason', 500);
+        throw new Error('unreachable');
     }
 
     const table = loadTableData(tableId);
 
     const oldRow = table.data.find((row) => row.rowId == rowId);
     if(!oldRow) {
-        throw new Error('row not found');
+        rowNotFound();
+        throw new Error('unreachable');
     }
 
     const newRowData = oldRow.data.map((data, index) => {
@@ -289,7 +288,7 @@ function createWithTypeValidation(
     columns: ColumnMetadata[]
 ): RowData {
     if(data.length != columns.length) {
-        throw new Error('Number of entries down to correspond to the number of columns')
+        errorWithStatus('Number of entries down to correspond to the number of columns', 400);
     }   
 
     const savedData = data.map((cell, index) => {
@@ -307,7 +306,8 @@ function createWithTypeValidation(
                     return valueToSave;
                 }
             } catch(e) {
-                throw new Error(`Invalid data for column ${index}. Reason: ${e}`)
+                errorWithStatus(`Invalid data for column ${index}. Reason: ${e}`, 400);
+                throw new Error('unreachable');
             }
         } else {
             return cell;

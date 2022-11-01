@@ -106,3 +106,8 @@ export async function editCellData(dbId: string, tableId: string, rowId: string,
 export async function deleteRow(dbId: string, tableId: string, rowId: string) {
     await fetchEndpoint(`dbs/${dbId}/tables/${tableId}/rows/${rowId}`, 'DELETE');
 }
+
+export async function getTableIntersection(dbId: string, tableId1: string, tableId2: string): Promise<TableData> {
+    const data = await fetchEndpoint(`dbs/${dbId}/tables/${tableId1}?intersection=${tableId2}`);
+    return JSON.parse(data);
+}

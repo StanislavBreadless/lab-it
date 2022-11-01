@@ -33,10 +33,21 @@
                 <button @click="openTableContent">Open table content</button>
             </div>
             <div>
-                6. Delete table
+                <p>6. Delete table</p>
+                <select name="table" v-model="deleteTableName">
+                    <option v-for="table in dbInfo.tables">{{table.name}}</option>
+                </select>
+                <button @click="openTableContent">Open table content</button>
             </div>
             <div>
                 7. Find table intersection
+                <select name="table" v-model="comp1Name">
+                    <option v-for="table in dbInfo.tables">{{table.name}}</option>
+                </select>
+                <select name="table" v-model="comp2Name">
+                    <option v-for="table in dbInfo.tables">{{table.name}}</option>
+                </select>
+                <button @click="findTableIntersection">Find!</button>
             </div>
         </div>
     </div>
@@ -56,7 +67,10 @@ import Vue from 'vue';
             newDbName: '',
             newTableName: '',
             editMetaTableName: '',
-            openTableContentName: ''
+            openTableContentName: '',
+            comp1Name: '',
+            comp2Name: '',
+            deleteTableName: ''
         }
     },
     methods: {
@@ -74,6 +88,12 @@ import Vue from 'vue';
         },
         openTableContent() {
             this.$emit('openTableContent', this.openTableContentName);
+        },
+        deleteTable() {
+            this.$emit('deleteTable', this.deleteTableName);
+        },
+        findTableIntersection() {
+            this.$emit('findTableIntersection', this.comp1Name, this.comp2Name);
         }
     }
   });

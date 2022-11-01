@@ -1,10 +1,10 @@
 <template>
   <div id="app">
     <OpenDB @openDb="openDb" @createDb="createDb" v-if="state == 'OpenDB'" />
-    <ViewDb  @openTableContent="viewTableContent" @editTableMeta="editTableMeta" @changeDbName="changeDbName" @deleteDb="deleteDb" @addTable="addTable" :dbInfo="dbInfo" v-else-if="state == 'ViewDb'" />
+    <ViewDb @findTableIntersection="findTableIntersection" @deleteTable="deleteTable" @openTableContent="viewTableContent" @editTableMeta="editTableMeta" @changeDbName="changeDbName" @deleteDb="deleteDb" @addTable="addTable" :dbInfo="dbInfo" v-else-if="state == 'ViewDb'" />
     <ViewTableMeta @viewTablesContent="viewCurrentTableContent" @deleteColumn="deleteColumn" @editColumnName="editColumnName" @addNewColumn="addNewColumn" @changeTableName="changeTableName" :dbInfo="dbInfo" :tableId="viewedTableId" v-else-if="state == 'ViewTableMeta'" />
     <ViewTable @deleteTable="deleteCurrentTable" @editMeta="editCurrentTableMeta" @editRow="editRowFromCurrentTable" @deleteRow="deleteRowFromCurrentTable" @addRow="addToRowToCurrentTable" :dbInfo="dbInfo" :tableId="viewedTableId" :tableData="tableData" v-else-if="state == 'ViewTable'" />
-    <ViewIntersection v-else-if="state == 'ViewIntersection'" />
+    <ViewIntersection @returnToViewDb="returnToViewDb" :tableId1="tableComp1Id" :tableId2="tableComp2Id" :intersectionData="tableIntersection" :dbInfo="dbInfo" v-else-if="state == 'ViewIntersection'" />
     <Loader v-else-if="state == 'Loader'" />
   </div>
 </template>
@@ -18,7 +18,7 @@ import ViewTable from './components/ViewTableContent.vue';
 import ViewIntersection from './components/ViewIntersection.vue';
 import Loader from './components/Loader.vue';
 import { ColumnType, DatabaseMeta, DataCell, TableData } from './backend-types';
-import { addColumn, addRow, changeDbName, createDb, createNewTable, deleteColumn, deleteDb, deleteRow, deleteTable, editCellData, editColumnName, editTableName, getDbInfo, getDbInfoByName, getTableData } from './http';
+import { addColumn, addRow, changeDbName, createDb, createNewTable, deleteColumn, deleteDb, deleteRow, deleteTable, editCellData, editColumnName, editTableName, getDbInfo, getDbInfoByName, getTableData, getTableIntersection } from './http';
 import ViewTableMeta from './components/ViewTableMeta.vue';
 
 type State = 'OpenDB' | 'Loader' | 'ViewDb' | 'ViewTable' | 'ViewIntersection' | 'ViewTableMeta';
@@ -27,6 +27,9 @@ interface FormState {
   state: State,
   dbInfo: DatabaseMeta|null,
   tableData: TableData|null,
+  tableIntersection: TableData|null,
+  tableComp1Id: string,
+  tableComp2Id: string,
   viewedTableId: string
 }
 
@@ -37,7 +40,10 @@ export default Vue.extend({
       state: 'OpenDB',
       dbInfo: null,
       viewedTableId: '',
-      tableData: null
+      tableData: null,
+      tableIntersection: null,
+      tableComp1Id: '',
+      tableComp2Id: ''
     } as FormState
   },
   components: {
@@ -79,8 +85,6 @@ methods: {
 
       await deleteDb(this.dbInfo!.id);
       this.dbInfo = null;
-
-      alert('Success!');
 
       this.state = 'OpenDB';
     } catch(e) {
@@ -125,13 +129,10 @@ methods: {
 
       await addColumn(this.dbInfo!.id, this.viewedTableId, columnName, columnType);
       this.dbInfo = await getDbInfo(this.dbInfo!.id);
-
-      alert('Success');
     
       this.state = 'ViewTableMeta'
     } catch(e) {
       alert(e);
-      alert('Success');
       this.state ='ViewTableMeta';
     }
   },
@@ -148,7 +149,6 @@ methods: {
       this.state = 'ViewTableMeta';
     } catch(e) {
       alert(e);
-      alert('Success');
       this.state = 'ViewTableMeta';
     }
   },
@@ -165,7 +165,6 @@ methods: {
       this.state = 'ViewTableMeta'; 
     } catch(e) {
       alert(e);
-      alert('Success');
       this.state = 'ViewTableMeta';
     }
   },
@@ -190,8 +189,6 @@ methods: {
 
       await editTableName(this.dbInfo!.id, this.viewedTableId, newName);
       this.dbInfo = await getDbInfo(this.dbInfo!.id);
-
-      alert('success');
 
       this.state = 'ViewTableMeta';
     } catch(e) {
@@ -292,11 +289,58 @@ methods: {
     }
   },
 
+  async deleteTable(tableName: string) {
+    try {
+      this.state = 'Loader';
+      
+      const table = this.dbInfo!.tables.find(t => t.name == tableName)!;
+      await deleteTable(this.dbInfo!.id, table.id);
+
+      this.state = 'ViewDb'
+    } catch(e) {
+      alert(e);
+      this.state = 'OpenDB'
+    }
+  },
+
   async deleteCurrentTable() {
     try {
       this.state = 'Loader';
       
       await deleteTable(this.dbInfo!.id, this.viewedTableId);
+      this.dbInfo = await getDbInfo(this.dbInfo!.id);
+
+      this.state = 'ViewDb'
+    } catch(e) {
+      alert(e);
+      this.state = 'OpenDB'
+    }
+  },
+  async findTableIntersection(comp1Name: string, comp2Name: string) {
+    try {
+      this.state = 'Loader';
+
+      this.tableComp1Id = this.dbInfo!.tables.find(t => t.name == comp1Name)!.id;
+      this.tableComp2Id = this.dbInfo!.tables.find(t => t.name == comp2Name)!.id;
+
+      this.tableIntersection = await getTableIntersection(this.dbInfo!.id, this.tableComp1Id, this.tableComp2Id);
+
+      console.log('A' ,this.tableIntersection);
+      console.log('B', this.tableIntersection.data);
+      console.log('C', this.tableIntersection.data.length);
+
+
+      this.state = 'ViewIntersection'
+    } catch(e) {
+      alert(e);
+      this.state = 'OpenDB'
+    }
+  },
+
+  async returnToViewDb() {
+    try {
+      this.state = 'Loader';
+
       this.dbInfo = await getDbInfo(this.dbInfo!.id);
 
       this.state = 'ViewDb'
