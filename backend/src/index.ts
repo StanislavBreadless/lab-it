@@ -29,9 +29,9 @@ app.get('/dbs', (req: Request, res: Response) => {
         if(!db) {
             dbNotFound();
         }
-        res.end(JSON.stringify(db));
+        res.json(db);
     } else {    
-        res.end(JSON.stringify(dbs));
+        res.json(dbs);
     }
 });
 
@@ -74,7 +74,7 @@ app.post('/dbs/:dbId', (req, res) => {
     changeDbName(dbId, name);
 
     res.status(200);
-    res.end('{}');
+    res.json({});
 });
 
 app.delete('/dbs/:dbId', (req: Request, res: Response) => {
@@ -91,7 +91,7 @@ app.delete('/dbs/:dbId', (req: Request, res: Response) => {
     deleteDb(dbId);
 
     res.status(200);
-    res.end('{}')
+    res.json({})
 });
 
 
@@ -113,8 +113,7 @@ app.post('/dbs/:dbId/tables', (req, res) => {
     }
 
     const tableId = addTable(dbId, name);
-    res.status(200);
-    res.end(JSON.stringify(tableId));
+    res.status(200).json(tableId);
 });
 
 /// Get all the data from the table
@@ -146,7 +145,7 @@ app.get('/dbs/:dbId/tables/:tableId', (req: Request, res: Response) => {
         return;
     }
 
-    let result = JSON.stringify(tableData);
+    let result = tableData;
 
     if(req.query.intersection) {
         const table2Id = req.query.intersection;
@@ -164,12 +163,12 @@ app.get('/dbs/:dbId/tables/:tableId', (req: Request, res: Response) => {
             return;    
         }
 
-        result = JSON.stringify(intersection(tableData, tableData2, table1, table2));
-        res.end(JSON.stringify(result))
+        result = intersection(tableData, tableData2, table1, table2);
+        res.json(result)
         return;
     }
 
-    res.end(JSON.stringify(tableData))
+    res.json(tableData)
 });
 
 /// Edit table's name
@@ -181,7 +180,7 @@ app.post('/dbs/:dbId/tables/:tableId', (req, res) => {
     editTableName(dbId, tableId, name);
 
     res.status(200);
-    res.end('{}');
+    res.json({});
 })
 
 /// Delete a table
@@ -190,7 +189,7 @@ app.delete('/dbs/:dbId/tables/:tableId', (req, res) => {
     deleteTable(dbId, tableId);
 
     res.status(200);
-    res.end('{}');
+    res.json({});
 })
 
 interface AddColumnQuery {
@@ -216,7 +215,7 @@ app.post('/dbs/:dbId/tables/:tableId/columns', (req, res) => {
     const id = addTableColumn(dbId, tableId, query.name, colType);
 
     res.status(200);
-    res.end(JSON.stringify(id));
+    res.json(id);
 })
 
 /// Change column's name
@@ -228,7 +227,7 @@ app.post('/dbs/:dbId/tables/:tableId/columns/:columnId', (req, res) => {
     renameTableColumn(dbId, tableId, columnId, name);
 
     res.status(200);
-    res.end('{}');
+    res.json({});
 })
 
 /// Delete column
@@ -239,7 +238,7 @@ app.delete('/dbs/:dbId/tables/:tableId/columns/:columnId', (req, res) => {
     deleteTableColumn(dbId, tableId, columnId);
 
     res.status(200);
-    res.end('{}');
+    res.json({});
 })
 
 /// Add a row to the table
@@ -247,10 +246,11 @@ app.post('/dbs/:dbId/tables/:tableId/rows', (req, res) => {
     const { dbId, tableId } = req.params;
 
     checkForExistence(res, dbId, tableId);
+    console.log('BODY: ', req.body);
     const rowId = addTableRow(dbId, tableId, req.body);
 
     res.status(200);    
-    res.end(JSON.stringify(rowId));
+    res.json(rowId);
 });
 
 interface EditCellData {
@@ -266,7 +266,7 @@ app.post('/dbs/:dbId/tables/:tableId/rows/:rowId', (req, res) => {
     editTableRow(dbId, tableId, rowId, reqBody.colId, reqBody.newValue);
 
     res.status(200);
-    res.end('{}')
+    res.json({})
 })
 
 /// Delete a row in a table
@@ -275,12 +275,9 @@ app.delete('/dbs/:dbId/tables/:tableId/rows/:rowId', (req, res) => {
 
     deleteTableRow(dbId, tableId, rowId);
     res.status(200);
-    res.end('{}')
+    res.json({})
 })
 
-app.listen(port, () => {
-  console.log(`⚡️[server]: Server is running at https://localhost:${port}`);
-});
 
 function checkForExistence(res: Record<any,any>, dbId: string, tableId?: string) {
     const dbs = loadDatabases();
@@ -304,9 +301,13 @@ function checkForExistence(res: Record<any,any>, dbId: string, tableId?: string)
 
 app.use((err: any, _: any, res: any, next: any) => {
     if (err.message && err.statusCode) {
-      return res.status(err.statusCode).json({ message: err.message }) 
+        console.log('STATUS CODE ', err.statusCode);
+        return res.status(err.statusCode).json({ message: err.message }) 
     }
     // pass the error to the default error handler
     return next(err);
 });
-  
+
+export const server = app.listen(port, () => {
+    console.log(`⚡️[server]: Server is running at https://localhost:${port}`);
+});
