@@ -79,6 +79,12 @@ export function validateType(value: string, type: ColumnType): string {
         }
 
         return value;
+    } else if (type == ColumnType.Char) {
+        if(value.length !== 1) {
+            errorWithStatus(`${value} is not a valid char`, 400);
+            throw new Error('unreachable');
+        }
+        return value;
     } else {
         errorWithStatus(`Type ${type} is not valid`, 400);
         throw new Error('unreachable');

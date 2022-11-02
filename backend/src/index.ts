@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 
-import { loadDatabases, loadTableData, addDb, editTableName, addTableColumn, deleteTableColumn, renameTableColumn, addTable, deleteTable, deleteDb, addTableRow, editTableRow, deleteTableRow, changeDbName } from './db-utils';
+import { loadDatabases, loadTableData, addDb, editTableName, addTableColumn, deleteTableColumn, renameTableColumn, addTable, deleteTable, deleteDb, addTableRow, editTableRow, deleteTableRow, changeDbName, loadBlob } from './db-utils';
 import { ColumnType, intersection, strToColumnType } from './db';
 import { dbNotFound, errorWithStatus, invalidRequest, notFound, tableNotFound } from './utils';
 
@@ -276,6 +276,17 @@ app.delete('/dbs/:dbId/tables/:tableId/rows/:rowId', (req, res) => {
     deleteTableRow(dbId, tableId, rowId);
     res.status(200);
     res.json({})
+})
+
+/// Get a blob from a table
+app.get('/blobs/:blobId', (req, res) => {
+    const { blobId } = req.params;
+
+    const blob = loadBlob(blobId);
+    
+    res.status(200).json({
+        data: blob
+    });
 })
 
 

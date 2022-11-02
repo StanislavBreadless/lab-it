@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import sha256 from 'fast-sha256';
 import { DatabaseMeta, TableData } from "./db";
 import { table } from "console";
+import { errorWithStatus } from "./utils";
 
 const DB_INFO_FILE = 'data/db_info.json';
 const TABLE_FOLDER = 'data/tables';
@@ -64,6 +65,15 @@ export function saveBlob(blob: string) {
     }
 
     return blobHash;
+}
+export function loadBlob(blobHash: string): string {
+    const filePath = blobFile(blobHash);
+
+    if(!existsSync(filePath)) {
+        errorWithStatus('Blob not found', 404);
+        throw new Error('unreachable');
+    }
+    return readFileSync(filePath).toString();
 }
 
 

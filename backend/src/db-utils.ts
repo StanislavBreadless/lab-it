@@ -162,6 +162,7 @@ export function deleteTableColumn(dbId: string, tableId: string, columnId: strin
         for(const row of tableData.data) {
             row.data = [...row.data.filter((v, i) => i !== columnIndex)];
         }
+        saveTableData(tableId, tableData);
 
         // Deleting the column itself:
         table.columns = [...table.columns.filter((v,i) => i !== columnIndex)];

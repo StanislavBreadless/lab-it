@@ -1,10 +1,11 @@
 <template>
   <div id="app">
     <OpenDB @openDb="openDb" @createDb="createDb" v-if="state == 'OpenDB'" />
-    <ViewDb @findTableIntersection="findTableIntersection" @deleteTable="deleteTable" @openTableContent="viewTableContent" @editTableMeta="editTableMeta" @changeDbName="changeDbName" @deleteDb="deleteDb" @addTable="addTable" :dbInfo="dbInfo" v-else-if="state == 'ViewDb'" />
+    <ViewDb @openBlob="openBlob" @findTableIntersection="findTableIntersection" @deleteTable="deleteTable" @openTableContent="viewTableContent" @editTableMeta="editTableMeta" @changeDbName="changeDbName" @deleteDb="deleteDb" @addTable="addTable" :dbInfo="dbInfo" v-else-if="state == 'ViewDb'" />
     <ViewTableMeta @viewTablesContent="viewCurrentTableContent" @deleteColumn="deleteColumn" @editColumnName="editColumnName" @addNewColumn="addNewColumn" @changeTableName="changeTableName" :dbInfo="dbInfo" :tableId="viewedTableId" v-else-if="state == 'ViewTableMeta'" />
     <ViewTable @deleteTable="deleteCurrentTable" @editMeta="editCurrentTableMeta" @editRow="editRowFromCurrentTable" @deleteRow="deleteRowFromCurrentTable" @addRow="addToRowToCurrentTable" :dbInfo="dbInfo" :tableId="viewedTableId" :tableData="tableData" v-else-if="state == 'ViewTable'" />
     <ViewIntersection @returnToViewDb="returnToViewDb" :tableId1="tableComp1Id" :tableId2="tableComp2Id" :intersectionData="tableIntersection" :dbInfo="dbInfo" v-else-if="state == 'ViewIntersection'" />
+    <DisplayBlob :html="blobHTML" v-else-if="state == 'DisplayBlob'" />
     <Loader v-else-if="state == 'Loader'" />
   </div>
 </template>
@@ -18,10 +19,11 @@ import ViewTable from './components/ViewTableContent.vue';
 import ViewIntersection from './components/ViewIntersection.vue';
 import Loader from './components/Loader.vue';
 import { ColumnType, DatabaseMeta, DataCell, TableData } from './backend-types';
-import { addColumn, addRow, changeDbName, createDb, createNewTable, deleteColumn, deleteDb, deleteRow, deleteTable, editCellData, editColumnName, editTableName, getDbInfo, getDbInfoByName, getTableData, getTableIntersection } from './http';
+import { addColumn, addRow, changeDbName, createDb, createNewTable, deleteColumn, deleteDb, deleteRow, deleteTable, editCellData, editColumnName, editTableName, getBlob, getDbInfo, getDbInfoByName, getTableData, getTableIntersection } from './http';
 import ViewTableMeta from './components/ViewTableMeta.vue';
+import DisplayBlob from './components/DisplayBlob.vue';
 
-type State = 'OpenDB' | 'Loader' | 'ViewDb' | 'ViewTable' | 'ViewIntersection' | 'ViewTableMeta';
+type State = 'OpenDB' | 'Loader' | 'ViewDb' | 'ViewTable' | 'ViewIntersection' | 'ViewTableMeta' | 'DisplayBlob';
 
 interface FormState {
   state: State,
@@ -30,7 +32,8 @@ interface FormState {
   tableIntersection: TableData|null,
   tableComp1Id: string,
   tableComp2Id: string,
-  viewedTableId: string
+  viewedTableId: string,
+  blobHTML: string
 }
 
 export default Vue.extend({
@@ -43,7 +46,8 @@ export default Vue.extend({
       tableData: null,
       tableIntersection: null,
       tableComp1Id: '',
-      tableComp2Id: ''
+      tableComp2Id: '',
+      blobHTML: ''
     } as FormState
   },
   components: {
@@ -53,18 +57,10 @@ export default Vue.extend({
     ViewTable,
     ViewIntersection,
     Loader,
-    ViewTableMeta
+    ViewTableMeta,
+    DisplayBlob
 },
 methods: {
-
-  async moveToViewDb() {
-    try {
-
-    } catch {
-
-    }
-  },
-
   async changeDbName(newName: string) {
     try {
       this.state = 'Loader';
@@ -344,6 +340,21 @@ methods: {
       this.dbInfo = await getDbInfo(this.dbInfo!.id);
 
       this.state = 'ViewDb'
+    } catch(e) {
+      alert(e);
+      this.state = 'OpenDB'
+    }
+  },
+  //883e24a15c24b22ab1be65b7a7a0dae67935aeacb92efc7ae2c60d83221a95ec
+
+  async openBlob(blobId: string) {
+    try {
+      this.state = 'Loader';
+
+      this.blobHTML = await getBlob(blobId);
+      console.log('blob HTML: ', this.blobHTML);
+
+      this.state = 'DisplayBlob';
     } catch(e) {
       alert(e);
       this.state = 'OpenDB'

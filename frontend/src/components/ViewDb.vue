@@ -40,7 +40,7 @@
                 <button @click="openTableContent">Open table content</button>
             </div>
             <div>
-                7. Find table intersection
+                <p>7. Find table intersection</p>
                 <select name="table" v-model="comp1Name">
                     <option v-for="table in dbInfo.tables">{{table.name}}</option>
                 </select>
@@ -48,6 +48,11 @@
                     <option v-for="table in dbInfo.tables">{{table.name}}</option>
                 </select>
                 <button @click="findTableIntersection">Find!</button>
+            </div>
+            <div>
+                <p>8. Open HTML blob</p>
+                <input v-model="htmlBlobId">
+                <button @click="openBlob">Open!</button>
             </div>
         </div>
     </div>
@@ -70,7 +75,8 @@ import Vue from 'vue';
             openTableContentName: '',
             comp1Name: '',
             comp2Name: '',
-            deleteTableName: ''
+            deleteTableName: '',
+            htmlBlobId: ''
         }
     },
     methods: {
@@ -94,6 +100,9 @@ import Vue from 'vue';
         },
         findTableIntersection() {
             this.$emit('findTableIntersection', this.comp1Name, this.comp2Name);
+        },
+        openBlob() {
+            this.$emit('openBlob', this.htmlBlobId)
         }
     }
   });

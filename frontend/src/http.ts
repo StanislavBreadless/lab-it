@@ -8,15 +8,22 @@ export async function fetchEndpoint(
     body?: any
 ) {
     console.log(method);
-    const response = await fetch(`${URL}/${endpoint}`, {
-        method,
-        body: JSON.stringify(body),
-        headers: new Headers({
-            'content-type': 'application/json'
-          }),      
-        credentials: 'same-origin', // include, *same-origin, omit
-    });
-    return await response.json();
+    // try {
+        console.log('HIIII2');
+
+        const response = await fetch(`${URL}/${endpoint}`, {
+            method,
+            body: JSON.stringify(body),
+            headers: new Headers({
+                'content-type': 'application/json'
+            }),      
+            credentials: 'same-origin', // include, *same-origin, omit
+        });
+        const result = await response.json();
+        if(response.status !== 200) {
+            throw new Error(JSON.stringify(result));
+        }
+        return result;
 }
 
 export async function getListOfDbs() {
@@ -109,5 +116,10 @@ export async function deleteRow(dbId: string, tableId: string, rowId: string) {
 
 export async function getTableIntersection(dbId: string, tableId1: string, tableId2: string): Promise<TableData> {
     const data = await fetchEndpoint(`dbs/${dbId}/tables/${tableId1}?intersection=${tableId2}`);
-    return JSON.parse(data);
+    return data;
+}
+
+export async function getBlob(blob: string): Promise<string> {
+    const data = await fetchEndpoint(`blobs/${blob}`);
+    return data.data;
 }
