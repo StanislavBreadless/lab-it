@@ -1,0 +1,760 @@
+openapi: 3.0.3
+info:
+  title: DBMS by Stanislav Bezkorovainyi
+  description: Опис DBMS до лабораторної роботи з інформаційних технологій
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+- url: http://localhost:8000
+- url: http://localhost:8080
+tags:
+- name: DBMS
+  description: API for interacting with DBMS
+paths:
+  /dbs:
+    get:
+      tags:
+      - dbs
+      summary: Retrive information about a database/databases.
+      description: Retrievies the list of all database or a particular one.
+      operationId: getDB
+      parameters:
+      - name: name
+        in: query
+        description: The name of the database to retrieve
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DatabaseMeta'
+                x-content-type: application/json
+        "404":
+          description: Not found
+      x-swagger-router-controller: Dbs
+    post:
+      tags:
+      - dbs
+      operationId: createDB
+      requestBody:
+        description: The payload with the name of the database to create
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/dbs_body'
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: Successfully created the database
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        "400":
+          description: Invalid request
+        "404":
+          description: Not found
+      x-swagger-router-controller: Dbs
+  /dbs/{dbId}:
+    get:
+      tags:
+      - dbs
+      summary: Retrive information about a database.
+      description: Retrieve information about a particular DB.
+      operationId: getDBById
+      parameters:
+      - name: dbId
+        in: path
+        description: The ID of the database to retrieve
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseMeta'
+        "404":
+          description: Not found
+      x-swagger-router-controller: Dbs
+    post:
+      tags:
+      - dbs
+      summary: Edit name of the database.
+      operationId: dbsDbIdPOST
+      parameters:
+      - name: dbId
+        in: path
+        description: The name of the database to retrieve
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: The payload with the name of the database to change to
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/dbs_dbId_body'
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Invalid request
+        "404":
+          description: Not found
+      x-swagger-router-controller: Dbs
+    delete:
+      tags:
+      - dbs
+      summary: Delete the database.
+      operationId: dbsDbIdDELETE
+      parameters:
+      - name: dbId
+        in: path
+        description: The name of the database to retrieve
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful operation
+        "404":
+          description: Not found
+      x-swagger-router-controller: Dbs
+  /dbs/{dbId}/tables:
+    post:
+      tags:
+      - table
+      summary: Create table for a database.
+      operationId: createTable
+      parameters:
+      - name: dbId
+        in: path
+        description: The ID of the database to add the table to
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: The payload with the name of the table to create
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameRequest'
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: Successfully created the table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        "400":
+          description: Invalid request
+        "404":
+          description: Not found
+      x-swagger-router-controller: Table
+  /dbs/{dbId}/tables/{tableId}:
+    get:
+      tags:
+      - table
+      summary: Get all the data from the table.
+      operationId: getTableInfo
+      parameters:
+      - name: dbId
+        in: path
+        description: The ID of the database
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tableId
+        in: path
+        description: The ID of the table
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully retrieved the table's name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableData'
+        "404":
+          description: Not found
+      x-swagger-router-controller: Table
+    post:
+      tags:
+      - table
+      summary: Edit table's name.
+      operationId: editTableName
+      parameters:
+      - name: dbId
+        in: path
+        description: The ID of the database
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tableId
+        in: path
+        description: The ID of the table
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: The payload with the name of the new table name
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameRequest'
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: Successfully edited the table's name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        "400":
+          description: Invalid request
+        "404":
+          description: Not found
+      x-swagger-router-controller: Table
+    delete:
+      tags:
+      - table
+      summary: Delete a table from a database.
+      operationId: deleteTable
+      parameters:
+      - name: dbId
+        in: path
+        description: The ID of the database
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tableId
+        in: path
+        description: The ID of the table
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully deleted the table
+        "404":
+          description: Not found
+      x-swagger-router-controller: Table
+  /dbs/{dbId}/tables/{tableId}/columns:
+    post:
+      tags:
+      - columns
+      summary: Add a column to a table.
+      operationId: createColumn
+      parameters:
+      - name: dbId
+        in: path
+        description: The ID of the database
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tableId
+        in: path
+        description: The ID of the table
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: The payload with the name and type of the new column
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddColumnQuery'
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: Successfully added a column to the table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        "400":
+          description: Invalid request
+        "404":
+          description: Not found
+      x-swagger-router-controller: Columns
+  /dbs/{dbId}/tables/{tableId}/columns/{columnId}:
+    post:
+      tags:
+      - columns
+      summary: Change name of a column in a table
+      operationId: updateColumnName
+      parameters:
+      - name: dbId
+        in: path
+        description: The ID of the database
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tableId
+        in: path
+        description: The ID of the table
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: columnId
+        in: path
+        description: The ID of the column
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: The payload with the new name of the column
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameRequest'
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: Successfully edited the table's name
+        "400":
+          description: Invalid request
+        "404":
+          description: Not found
+      x-swagger-router-controller: Columns
+    delete:
+      tags:
+      - columns
+      summary: Delete a column from a table
+      operationId: deleteColumn
+      parameters:
+      - name: dbId
+        in: path
+        description: The ID of the database
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tableId
+        in: path
+        description: The ID of the table
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: columnId
+        in: path
+        description: The ID of the column
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully edited the table's name
+        "404":
+          description: Not found
+      x-swagger-router-controller: Columns
+  /dbs/{dbId}/tables/{tableId}/rows:
+    post:
+      tags:
+      - rows
+      summary: Add table's row.
+      operationId: addRow
+      parameters:
+      - name: dbId
+        in: path
+        description: The ID of the database
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tableId
+        in: path
+        description: The ID of the table
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: The payload with the new row's content
+        content:
+          application/json:
+            schema:
+              type: array
+              example:
+              - column1Value
+              - column2Value
+              items:
+                type: string
+                nullable: true
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: Successfully added a row to the table
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        "400":
+          description: Invalid request
+        "404":
+          description: Not found
+      x-swagger-router-controller: Rows
+  /dbs/{dbId}/tables/{tableId}/rows/{rowId}:
+    post:
+      tags:
+      - rows
+      summary: Update a value in a cell in a particular row.
+      operationId: updateCellValue
+      parameters:
+      - name: dbId
+        in: path
+        description: The ID of the database
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tableId
+        in: path
+        description: The ID of the table
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: rowId
+        in: path
+        description: The ID of the row
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: The payload with the information on which cell to update
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditCellRequest'
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: Successfully updated a value in the cell
+        "400":
+          description: Invalid request
+        "404":
+          description: Not found
+      x-swagger-router-controller: Rows
+    delete:
+      tags:
+      - rows
+      summary: Delete a row from a table
+      operationId: deleteRow
+      parameters:
+      - name: dbId
+        in: path
+        description: The ID of the database
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tableId
+        in: path
+        description: The ID of the table
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: rowId
+        in: path
+        description: The ID of the row
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully deleted the row
+        "404":
+          description: Not found
+      x-swagger-router-controller: Rows
+  /blobs/{blobId}:
+    get:
+      tags:
+      - blobs
+      summary: Retrieve an HTML blob
+      operationId: getBlob
+      parameters:
+      - name: blobId
+        in: path
+        description: The ID of the blob to retrieve
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully retrieved the blob
+          content:
+            text/plain:
+              schema:
+                type: string
+                x-content-type: text/plain
+        "404":
+          description: Not found
+      x-swagger-router-controller: Blobs
+components:
+  schemas:
+    DatabaseMeta:
+      type: object
+      properties:
+        id:
+          type: string
+          example: da4c49e4-69b6-11ed-a1eb-0242ac120002
+        name:
+          type: string
+          example: My database
+        tables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableMetadata'
+      example:
+        tables:
+        - columns:
+          - name: My column
+            id: 5f396a42-69b7-11ed-a1eb-0242ac120002
+            type: String
+          - name: My column
+            id: 5f396a42-69b7-11ed-a1eb-0242ac120002
+            type: String
+          name: My table
+          id: 3d9eac9e-69b7-11ed-a1eb-0242ac120002
+        - columns:
+          - name: My column
+            id: 5f396a42-69b7-11ed-a1eb-0242ac120002
+            type: String
+          - name: My column
+            id: 5f396a42-69b7-11ed-a1eb-0242ac120002
+            type: String
+          name: My table
+          id: 3d9eac9e-69b7-11ed-a1eb-0242ac120002
+        name: My database
+        id: da4c49e4-69b6-11ed-a1eb-0242ac120002
+    TableMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 3d9eac9e-69b7-11ed-a1eb-0242ac120002
+        name:
+          type: string
+          example: My table
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnMetadata'
+      example:
+        columns:
+        - name: My column
+          id: 5f396a42-69b7-11ed-a1eb-0242ac120002
+          type: String
+        - name: My column
+          id: 5f396a42-69b7-11ed-a1eb-0242ac120002
+          type: String
+        name: My table
+        id: 3d9eac9e-69b7-11ed-a1eb-0242ac120002
+    ColumnMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 5f396a42-69b7-11ed-a1eb-0242ac120002
+        name:
+          type: string
+          example: My column
+        type:
+          type: string
+          description: Column type
+          example: String
+          enum:
+          - Integer
+          - Real
+          - Char
+          - String
+          - HtmlFile
+          - StringInvl
+      example:
+        name: My column
+        id: 5f396a42-69b7-11ed-a1eb-0242ac120002
+        type: String
+    IdResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 2347cda6-69b9-11ed-a1eb-0242ac120002
+      example:
+        id: 2347cda6-69b9-11ed-a1eb-0242ac120002
+    NameRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Object name
+    RowData:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: string
+            nullable: true
+        rowId:
+          type: string
+          example: 2347cda6-69b9-11ed-a1eb-0242ac120002
+    TableData:
+      type: object
+      properties:
+        data:
+          type: array
+          example:
+          - data:
+            - Column value 1
+            - Column value 2
+            rowId: 2347cda6-69b9-11ed-a1eb-0242ac120002
+          - data:
+            - null
+            - Column 2 value on row2
+            rowId: 2347cda6-69b9-11ed-a1eb-0242ac120002
+          - data:
+            - Column 1 value on row3
+            - null
+            rowId: 2347cda6-69b9-11ed-a1eb-0242ac120002
+          items:
+            $ref: '#/components/schemas/RowData'
+      example:
+        data:
+        - data:
+          - Column value 1
+          - Column value 2
+          rowId: 2347cda6-69b9-11ed-a1eb-0242ac120002
+        - data:
+          - null
+          - Column 2 value on row2
+          rowId: 2347cda6-69b9-11ed-a1eb-0242ac120002
+        - data:
+          - Column 1 value on row3
+          - null
+          rowId: 2347cda6-69b9-11ed-a1eb-0242ac120002
+    AddColumnQuery:
+      type: object
+      properties:
+        name:
+          type: string
+          example: MyColumnName
+        type:
+          type: string
+          enum:
+          - Integer
+          - Real
+          - Char
+          - String
+          - HtmlFile
+          - StringInvl
+    EditCellRequest:
+      type: object
+      properties:
+        colId:
+          type: string
+          example: 2347cda6-69b9-11ed-a1eb-0242ac120002
+        newValue:
+          type: string
+          nullable: true
+          example: NewValue
+    dbs_body:
+      type: object
+      properties:
+        name:
+          type: string
+    dbs_dbId_body:
+      type: object
+      properties:
+        name:
+          type: string
