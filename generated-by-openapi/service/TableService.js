@@ -2,7 +2,9 @@
 
 const dbUtils = require('../utils/db-utils');
 const fsUtils = require('../utils/fs-utils');
+const { notFound, dbNotFound } = require('../utils/utils');
 const writer = require('../utils/writer');
+const db = require('../utils/db');
 
 
 /**
@@ -56,12 +58,51 @@ exports.editTableName = function(body,dbId,tableId) {
  * tableId String The ID of the table
  * returns TableData
  **/
-exports.getTableInfo = function(dbId,tableId) {
+exports.getTableInfo = function(intersection, dbId,tableId) {
   return new Promise(function(resolve, reject) {
+
+    console.log(fsUtils.loadDatabases());
+    console.log(dbId);
+    console.log(tableId);
+    console.log(intersection);
+    const dbData = fsUtils.loadDatabases().find(db => db.id === dbId);
+
+    if(!dbData) {
+      dbNotFound();
+    }
     
     const tableData = fsUtils.loadTableData(tableId); 
 
-    resolve(tableData);
+    if(!tableData) {
+      notFound('Not found');
+    }
+
+    if(intersection) {
+      console.log('here');
+      const tableData2 = fsUtils.loadTableData(intersection);
+      if(!tableData2) {
+        notFound('Not found');
+      }
+      console.log('here2');
+
+      const table1 = dbData.tables.find(table => table.id === tableId);
+      const table2 = dbData.tables.find(table => table.id === intersection);
+      console.log('t', table1);
+      console.log('t1', table2);
+      if(!table1 || !table2) {
+        notFound('Not found');
+      }
+      console.log(JSON.stringify(tableData, null, 2));
+      console.log(JSON.stringify(tableData2, null, 2));
+      console.log('here3');
+      const result = db.intersection(tableData, tableData2, table1, table2);
+      console.log('here4');
+      console.log(result);
+      resolve(result)
+    } else {
+      resolve(tableData);
+    }
+
   });
 }
 

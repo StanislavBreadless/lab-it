@@ -206,6 +206,12 @@ paths:
         explode: false
         schema:
           type: string
+      - name: intersection
+        in: query
+        description: The ID of the table to find intersection with
+        required: false 
+        schema:
+          type: string
       responses:
         "200":
           description: Successfully retrieved the table's name

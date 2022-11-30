@@ -33,12 +33,14 @@ module.exports.editTableName = function editTableName (req, res, next, body, dbI
     });
 };
 
-module.exports.getTableInfo = function getTableInfo (req, res, next, dbId, tableId) {
-  Table.getTableInfo(dbId, tableId)
+module.exports.getTableInfo = function getTableInfo (req, res, next, dbId, tableId, intersection) {
+  Table.getTableInfo(dbId, tableId, intersection)
     .then(function (response) {
+      console.log('RESPONSE', response);
       utils.writeJson(res, response);
     })
     .catch(function (response) {
+      console.log(response);
       utils.writeJson(res, response);
     });
 };
