@@ -2,24 +2,38 @@ import { DatabaseMeta, TableData, ColumnType, DataCell } from './backend-types';
 
 const URL = 'http://localhost:8000';
 
-export async function fetchEndpoint(
+
+export function fetchEndpoint(
     endpoint: string,
     method?: string,
     body?: any
-) {
-    const response = await fetch(`${URL}/${endpoint}`, {
-        method,
-        body: JSON.stringify(body),
-        headers: new Headers({
-            'content-type': 'application/json'
-        }),      
-        credentials: 'same-origin', // include, *same-origin, omit
+): Promise<any> {
+    return new Promise((resolve, reject) => {
+        let xhr = new XMLHttpRequest();
+        xhr.open(method || 'GET', `${URL}/${endpoint}`);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.responseType = 'json';
+        if(body) {
+            console.log(body);
+            xhr.send(JSON.stringify(body));
+        } else {
+            xhr.send();
+        }
+        xhr.onload = function() {
+            if(xhr.status >= 200 && xhr.status < 300) {
+                resolve(xhr.response)
+            } else {
+                console.log(xhr.response);
+                reject(xhr.response);
+            }
+        }
+        xhr.onerror = function() {
+            reject(xhr.response);
+        }
+        xhr.ontimeout = function() {
+            reject('Timeout');
+        }
     });
-    const result = await response.json();
-    if(response.status !== 200) {
-        throw new Error(JSON.stringify(result));
-    }
-    return result;
 }
 
 export async function getListOfDbs() {
